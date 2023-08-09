@@ -1,0 +1,1 @@
+{"first":[{"id":0,"name":"Їжа"},{"id":1,"name":"Транспорт"},{"id":2,"name":"Навчання"}],"second":[{"id":0,"name":"pizza","costs":50.0,"category":{"id":0,"name":"Їжа"}},{"id":1,"name":"taxi","costs":15.0,"category":{"id":1,"name":"Транспорт"}},{"id":2,"name":"udemy","costs":600,"category":{"id":2,"name":"Навчання"}}]}
