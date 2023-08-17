@@ -1,1 +1,12 @@
-{"first":[{"id":0,"name":"Їжа"},{"id":1,"name":"Транспорт"},{"id":2,"name":"Навчання"}],"second":[{"id":0,"name":"pizza","costs":50.0,"category":{"id":0,"name":"Їжа"}},{"id":1,"name":"taxi","costs":15.0,"category":{"id":1,"name":"Транспорт"}},{"id":2,"name":"udemy","costs":600,"category":{"id":2,"name":"Навчання"}}]}
+{"first":
+[{"id":0,"name":"Їжа"},{"id":1,"name":"Транспорт"},{"id":2,"name":"Навчання"}],
+
+
+  "second":
+  [{"id":0,"name":"pizza","costs":50.0,"category":{"id":0,"name":"Їжа"}},
+    {"id":1,"name":"taxi","costs":15.0,"category":{"id":1,"name":"Транспорт"}},
+    {"id":2,"name":"udemy","costs":600.0,"category":{"id":2,"name":"Навчання"}},
+    {"id":3,"name":"cola","costs":120.0,"category":{"id":0,"name":"Їжа"}},
+    {"id":4,"name":"sprite","costs":139.0,"category":{"id":0,"name":"Їжа"}},
+    {"id":5,"name":"e","costs":2.0,"category":{"id":0,"name":"Їжа"}},
+    {"id":6,"name":"C","costs":40,"category":{"id":0,"name":"Їжа"}}]}
