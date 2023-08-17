@@ -8,7 +8,7 @@ class ExpenseTracking {
     fun getCategoryList(): List<Category> {
         return categoriesList
     }
-    @JvmName("getVitrataList1")
+
     fun getExpenseList(): List<Expense> {
         return expenseList
     }

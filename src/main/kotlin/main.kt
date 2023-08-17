@@ -1,10 +1,11 @@
 import java.io.File
 import com.google.gson.Gson
-import extention.printCategories
-import extention.printExpenses
+import extention.printList
+import extention.updateCounter
 
 
 val oblik = ExpenseTracking()
+
 
 fun main() {
 
@@ -20,22 +21,29 @@ fun loadJson() {
     val fileName = "data.json"
 
     val jsonContent = File(fileName).readText()
-    val data = gson.fromJson(jsonContent, Pair::class.java)
 
-    val categories: List<Category> = gson.fromJson(data.first.toString(), Array<Category>::class.java).toList()
-    val expenses: List<Expense> = gson.fromJson(data.second.toString(), Array<Expense>::class.java).toList()
+    try {
+        val (categoryData, expenseData) = gson.fromJson(jsonContent, Pair::class.java)
 
-    for (category in categories) {
-      //  println("Category ID: ${category.id}, Name: ${category.name}")
-        oblik.addCategory(category)
+        val categories: List<Category> = gson.fromJson(categoryData.toString(), Array<Category>::class.java).toList()
+        val expenses: List<Expense> = gson.fromJson(expenseData.toString(), Array<Expense>::class.java).toList()
+
+        for (category in categories) {
+            oblik.addCategory(category)
+        }
+        categories.updateCounter()
+       // Category.updateCounter(categories.map { it.id }.maxOrNull() ?: 0)
+
+        for (expense in expenses) {
+            oblik.addExpense(expense)
+        }
+        expenses.updateCounter()
+       // Expense.updateCounter(expenses.map { it.id }.maxOrNull() ?: 0)
+
+
+    } catch (e: Exception) {
+        println("Помилка при зчитуванні данних з JSON: ${e.message}")
     }
-    Category.counter = categories.last().id
-
-    for (expense in expenses) {
-      //  println("Expense ID: ${expense.id}, Name: ${expense.name}, Costs: ${expense.costs}, Category: ${expense.category}")
-        oblik.addExpense(expense)
-    }
-    Expense.counter = expenses.last().id
 }
 
 
@@ -47,7 +55,7 @@ object AppAppearance {
     fun bootsTrap(){
         val categoryNameList = mutableListOf("Їжа", "Транспорт", "Навчання")
         for (nameCategory in categoryNameList){
-            val category = Category.createCategory(nameCategory)
+            val category = Category(nameCategory)
             oblik.addCategory(category)
         }
         val expenseData = listOf(
@@ -59,7 +67,7 @@ object AppAppearance {
             val name = data["name"] as String
             val costs = data["costs"] as Number
             val category = data["category"] as Category
-            oblik.addExpense(Expense.createExpense(name, costs, category))
+            oblik.addExpense(Expense(name, costs, category))
         }
     }
 
@@ -88,7 +96,7 @@ object AppAppearance {
             "displayVitrataByID"->displayVitrata()
             "changeVitrata"-> changeVitrata()
             "allVitrataByCategory"->displayAllVitrataByCategory()
-            "gistogramma"->showGistopgram()
+            "gistogramma"-> showVerticalHistogramWithScaledHeights()
             "showCommands"-> allComands()
 
             "exit" -> exitApp()
@@ -97,27 +105,96 @@ object AppAppearance {
         private fun commandNotFound() = "немає такої команди!"
 
 
-    private fun showGistopgram()  {
+
+    private fun showVerticalHistogramWithScaledHeights() {
+        val categoryExpensesMap = mutableMapOf<Category, List<Expense>>()
+
         val expenseList = oblik.getExpenseList()
 
-        if (expenseList.isEmpty()) {
-            println("Немає витрат для створення гістограмми")
+
+        for (expense in expenseList) {
+            val category = expense.category
+            if (categoryExpensesMap.containsKey(category)) {
+                val expenses = categoryExpensesMap[category]!!.toMutableList()
+                expenses.add(expense)
+                categoryExpensesMap[category] = expenses
+            } else {
+                categoryExpensesMap[category] = listOf(expense)
+            }
+        }
+
+        if (categoryExpensesMap.isEmpty()) {
+            println("Немає данних для гістрограммі")
             return
         }
-        println("Гістограмма витрат:")
-        for (expense in expenseList) {
-            val expenseAmount = expense.costs.toDouble()
-            val expenseName = expense.name
-            val barLength = (expenseAmount / 10).toInt()
 
-            println("$expenseName - ${expenseAmount} грн: ${"▓".repeat(barLength)}")
+        println("Гістограмма :")
+
+        // Знаходимо максимальну суму витрат у одній категорії
+        val maxCategoryCosts = categoryExpensesMap.values.map { expenses ->
+            expenses.sumByDouble { it.costs.toDouble() }
+        }.maxOrNull() ?: 0.0
+
+        // Побудова вертикальної гістограми для кожної категорії.
+        for (i in 50 downTo 1) {
+            val row = StringBuilder()
+            for (expenses in categoryExpensesMap.values) {
+                val categoryCosts = expenses.sumByDouble { it.costs.toDouble() }
+                val scaledHeight = (categoryCosts / maxCategoryCosts * 50).toInt()
+                row.append(if (scaledHeight >= i) "▓" else " ")
+                row.append(" ")
+            }
+            println(row)
         }
+
+
+        println("_".repeat(categoryExpensesMap.size * 2))
+
+
+        val columnNumbersRow = StringBuilder()
+        for (index in 1..categoryExpensesMap.size) {
+            columnNumbersRow.append("$index ")
+        }
+        println(columnNumbersRow)
+
+        // Обчислити загальну суму витрат."
+        val totalExpenses = categoryExpensesMap.values.flatten().sumByDouble { it.costs.toDouble() }
+
+         // "Вивести дані у відсотковому співвідношенні."
+        for ((index, category) in categoryExpensesMap.keys.withIndex()) {
+            val categoryTotalCosts = categoryExpensesMap[category]?.sumByDouble { it.costs.toDouble() } ?: 0.0
+            val percentage = (categoryTotalCosts / totalExpenses) * 100
+            println("$index - ${category.name} ($categoryTotalCosts - ${categoryExpensesMap[category]?.size} items) - %.2f%%".format(percentage))
+        }
+
     }
+
+
+
+
+
+
+//    private fun showGistopgram()  {
+//        val expenseList = oblik.getExpenseList()
+//        //зробити гістрограмму по категоріях
+//        if (expenseList.isEmpty()) {
+//            println("Немає витрат для створення гістограмми")
+//            return
+//        }
+//        println("Гістограмма витрат:")
+//        for (expense in expenseList) {
+//            val expenseAmount = expense.costs.toDouble()
+//            val expenseName = expense.name
+//            val barLength = (expenseAmount / 10).toInt()
+//
+//            println("$expenseName - ${expenseAmount} грн: ${"▓".repeat(barLength)}")
+//        }
+//    }
 
 
     private fun displayVitrata() {
 
-        oblik.getExpenseList().printExpenses()
+        oblik.getExpenseList().printList()
 
         println("Введіть id витрати яку хочети подивитися: ")
         val inputID = readLine()?.toIntOrNull()
@@ -153,7 +230,7 @@ object AppAppearance {
         }
 
         println("Оберіть ID потрібноі категоріі :")
-        oblik.getCategoryList().printCategories()
+        oblik.getCategoryList().printList()
 
 
         val selectedCategoryId = readLine()?.toIntOrNull() ?: -1
@@ -166,7 +243,7 @@ object AppAppearance {
 
         selectedCategory?.let {
             if (inputCostVitrata != null) {
-                 oblik.addExpense(Expense.createExpense(inputNameVitrata,vitrataCost, it))
+                 oblik.addExpense(Expense(inputNameVitrata,vitrataCost, it))
             }
         }
     }
@@ -177,7 +254,7 @@ object AppAppearance {
 
         println("Додати категорію уведіть ім'я :")
         val inputNameCategory = readLine()?:""
-        val category =  Category.createCategory(inputNameCategory)
+        val category =  Category(inputNameCategory)
         category.let { oblik.addCategory(it) }
 
     }
@@ -196,13 +273,11 @@ object AppAppearance {
         File(fileName).writeText(jsonData)
 
         println("JSON data saved to $fileName")
-
     }
 
     private fun displayAllVitrataByCategory() {
 
-        oblik.getCategoryList().printCategories()
-
+        oblik.getCategoryList().printList()
         println("Введіть категорію ім'я :")
         val inputCategory = readLine()
         val vitrataCategory = oblik.getExpenseList().filter { it.category.name == inputCategory }
@@ -217,7 +292,7 @@ object AppAppearance {
     }
 
     private fun changeVitrata() {
-        oblik.getExpenseList().printExpenses()
+        oblik.getExpenseList().printList()
 
         println("Введіть id витрати, яку хочете змінити:")
         val inputID = readLine()?.toIntOrNull()
@@ -253,7 +328,7 @@ object AppAppearance {
     private fun deleteVitrata() {
         println("Введіть ID витрати яку потрібно видалити :")
 
-        oblik.getExpenseList().printExpenses()
+        oblik.getExpenseList().printList()
 
            val inputIdDelete = readLine()?.toIntOrNull()
            if (inputIdDelete != null) {
